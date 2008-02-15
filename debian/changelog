@@ -1,0 +1,26 @@
+empcd (2008.02.16) stable; urgency=low
+
+  * Code cleanup, removal of compiler warnings.
+  * Volume & Playlist support.
+  * Pausing fix.
+  * Multiple actions per event.
+  * libmpdclient from mpc 0.12.2.
+  * Debian initscript fixup.
+  * Updated help with actions and arguments.
+
+ -- Jeroen Massar <jeroen@unfix.org>  Sat, 16 Feb 2008 22:10:42 +0100
+
+empcd (2005.12.12) unstable; urgency=low
+
+  * Fixed init scripts
+  * Added "exclusive access" mode Frederic Pasteleurs.
+    This defaults to on now.
+
+ -- Jeroen Massar <jeroen@unfix.org>  Mon, 12 Dec 2005 23:32:42 +0100
+
+empcd (2005.11.28) unstable; urgency=low
+
+  * Initial Release
+
+ -- Jeroen Massar <jeroen@unfix.org>  Sun, 28 Nov 2005 23:59:42 +0100
+

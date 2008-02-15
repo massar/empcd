@@ -1,0 +1,4 @@
+empcd
+empcd.o
+keyeventtable.o
+support/mpc-0.12.2/src/libmpdclient.o
