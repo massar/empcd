@@ -176,6 +176,11 @@ void f_exec(const char *arg, const char *args)
 	system(arg);
 }
 
+void f_quit(const char *arg, const char *args)
+{
+	running = false;
+}
+
 #define F_CMDG(fn, f)											\
 void fn(const char *arg, const char *args)								\
 {													\
@@ -360,6 +365,7 @@ static const struct empcd_funcs
 } func_map[] =
 {
 	{"EXEC",	f_exec,		"exec",			"<shellcmd>",		"Execute a command"},
+	{"QUIT",	f_quit,		"quit",			NULL,			"Quit empcd"},
 	{"MPD_NEXT",	f_next,		"mpd_next",		NULL,			"MPD Next Track"},
 	{"MPD_PREV",	f_prev,		"mpd_prev",		NULL,			"MPD Previous Track"},
 	{"MPD_STOP",	f_stop,		"mpd_stop",		NULL,			"MPD Stop Playing"},
