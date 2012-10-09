@@ -715,7 +715,7 @@ static struct option const long_options[] = {
 	{NULL,			no_argument,		NULL, 0},
 };
 
-static char short_options[] = "c:de:fhKLqu:vVy:";
+static char short_options[] = "c:de:fhKLqu:vVy:xX";
 
 static struct
 {
