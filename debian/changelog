@@ -5,6 +5,9 @@ empcd (2012.11.22) stable; urgency=low
   * Minor formatting fixups
   * Add 'giveup' and 'dontgiveup' option for retry on device open
 
+  Lee Dolsen (https://github.com/ldolse/empcd/)
+  * Updated keytable to reflect IR & Multimedia additions to the kernel
+
  -- Jeroen Massar <jeroen@massar.ch>  Thu, 22 Nov 2012 15:07:42 +0100
 
 empcd (2008.02.16) stable; urgency=low
