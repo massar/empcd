@@ -399,29 +399,48 @@ bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const
 }
 
 /*
-	KEY_KPSLASH RELEASE f_seek -1
+	KEY_KPSLASH DOWN f_seek -1
 	<key> <value> <action> <arg>
 */
 bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd_mapping *value_map)
 {
-	unsigned int i, o = 0, len = strlen(buf), l, event = 0, value = 0, func = 0;
-	void (*what)(char *arg);
-	char *arg = NULL;
+	unsigned int	i = 0, o = 0, len = strlen(buf), l,
+			event = 0, event_code = 0,
+			value = 0, func = 0;
+	void		(*what)(char *arg);
+	char		*arg = NULL, *event_name = "custom", *event_label = "custom";
 
-	for (i=0; event_map[i].code != EMPCD_MAPPING_END; i++)
+	/* Not a numeric value? */
+	if (sscanf(&buf[o], "%u", &i) == 1 && i == 0)
 	{
-		l = strlen(event_map[i].name);
-		if (len < o+l || buf[o+l] != ' ') continue;
-		if (strncasecmp(&buf[o], event_map[i].name, l) == 0) break;
+		/* This is our event_code */
+		event_code = i;
+		event = 0;
+	}
+	else
+	{
+		/* Try a name match */
+		for (i=0; event_map[i].code != EMPCD_MAPPING_END; i++)
+		{
+			l = strlen(event_map[i].name);
+			if (len < o+l || buf[o+l] != ' ') continue;
+			if (strncasecmp(&buf[o], event_map[i].name, l) == 0) break;
+		}
+
+		if (event_map[i].code == EMPCD_MAPPING_END)
+		{
+			dolog(LOG_DEBUG, "Undefined Code at %u in '%s'\n", o, buf);
+			return false;
+		}
+
+		/* This is our event_code */
+		event_code = event_map[i].code;
+		event_name = event_map[i].name;
+		event_label = event_map[i].label;
+		event = i;
 	}
 
-	if (event_map[i].code == EMPCD_MAPPING_END)
-	{
-		dolog(LOG_DEBUG, "Undefined Code at %u in '%s'\n", o, buf);
-		return false;
-	}
-	event = i;
-
+	/* Figure out the value (up/down/release/...) */
 	o += l+1;
 	for (i=0; value_map[i].code != EMPCD_MAPPING_END; i++)
 	{
@@ -437,6 +456,8 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	}
 	value = i;
 
+
+	/* Figure out the function */
 	o += l+1;
 	for (i=0; func_map[i].name != NULL; i++)
 	{
@@ -455,13 +476,13 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	o += l+1;
 	if (len > o) arg = &buf[o];
 
-	dolog(LOG_DEBUG, "Mapping Event %s (%s) %s (%s) to do %s (%s) with arg %s\n",
-		event_map[event].name, event_map[event].label,
+	dolog(LOG_DEBUG, "Mapping Event %s (%s/%u) %s (%s) to do %s (%s) with arg %s\n",
+		event_name, event_label, event_code,
 		value_map[value].name, value_map[value].label,
 		func_map[func].name, func_map[func].label,
 		arg ? arg : "<none>");
 
-	return set_event(EV_KEY, event_map[event].code, value_map[value].code, func_map[func].function, arg, func_map[func].args);
+	return set_event(EV_KEY, event_code, value_map[value].code, func_map[func].function, arg, func_map[func].args);
 }
 
 /********************************************************************/
