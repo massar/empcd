@@ -1001,14 +1001,14 @@ int main (int argc, char **argv)
 		sleep(1);
 	}
 
-	if (fd < 0)
-	{
-		dolog(LOG_ERR, "Couldn't open event device %s, gave up\n", device);
-		return 1;
-	}
-
 	free(device);
 	device = NULL;
+
+	if (fd < 0)
+	{
+		dolog(LOG_ERR, "Couldn't open event device, gave up\n");
+		return 1;
+	}
 
 	/* Obtain Exclusive device access */
 	if (exclusive) ioctl(fd, EVIOCGRAB, 1);
