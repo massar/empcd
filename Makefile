@@ -11,17 +11,17 @@
 #
 
 BINS	= empcd
-SRCS	= empcd.c keyeventtable.c support/mpc-0.11.2/src/libmpdclient.c
+SRCS	= empcd.c keyeventtable.c support/mpc-0.12.2/src/libmpdclient.c
 INCS	= empcd.h
 DEPS	= Makefile
-OBJS	= empcd.o keyeventtable.o support/mpc-0.11.2/src/libmpdclient.o
-WARNS	= -W -Wall -pedantic -Wno-format -Wno-unused
+OBJS	= empcd.o keyeventtable.o support/mpc-0.12.2/src/libmpdclient.o
+WARNS	= -W -Wall -pedantic -Wno-format -Wno-unused -Wno-long-long
 EXTRA   = -g3
 CFLAGS	= $(WARNS) $(EXTRA) -D_GNU_SOURCE
 LDFLAGS	=
 CC      = gcc
 RM      = rm
-DESTDIR	=
+DESTDIR	= /
 dirsbin = /usr/sbin/
 dirdoc  = /usr/share/doc/empcd/
 
@@ -35,10 +35,9 @@ all:	$(BINS)
 
 empcd:	$(OBJS) ${INCS} ${DEPS}
 	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
-	#strip $@
 
 clean:
-	$(RM) -f $(OBJS) $(BINS)
+	$(RM) -rf $(OBJS) $(BINS) build-stamp configure-stamp debian/*.debhelper debian/empcd.substvars debian/files debian/dirs debian/empcd
 
 distclean: clean
 

@@ -3,8 +3,6 @@
 #ifndef EMPCD_H
 #define EMPCD_H 1
 
-#define EMPCD_VERSION "2005.11.28"
-
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -25,6 +23,9 @@
 
 /* Linux specific... */
 #include <linux/input.h>
+#ifndef EVIOCGRAB
+#define EVIOCGRAB	_IOW('E', 0x90, int)	/* Grab/Release device, Linux kernel 2.4 headers don't have this */ 
+#endif
 
 #ifndef NULL
 #define NULL 0
@@ -47,8 +48,8 @@ struct empcd_events
 	uint16_t		type;
 	uint16_t 		code;
 	int32_t			value;
-	void			(*action)(char *);
-	char			*args;
+	void			(*action)(const char *arg, const char *args);
+	const char		*args, *needargs;
 };
 
 #define EMPCD_MAPPING_END	0xffff

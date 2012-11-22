@@ -12,7 +12,7 @@
 
 . /lib/lsb/init-functions
 
-if [ -f /etc/empcd.conf ]; then
+if [ ! -f /etc/empcd.conf ]; then
 	log_failure_msg "empcd not configured, use /usr/share/doc/empcd/empcd.conf as a template and copy it to /etc/empcd.conf, not started."
 	log_end_msg 1
 	exit 0
