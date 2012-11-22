@@ -24,6 +24,7 @@ unsigned int		verbosity = 0, drop_uid = 0, drop_gid = 0;
 bool			daemonize = true;
 bool			running = true;
 bool			exclusive = true;
+bool			giveup = true;
 char			*mpd_host = NULL, *mpd_port = NULL;
 
 /* When we receive a signal, we abort */
@@ -581,6 +582,14 @@ int readconfig(char *cfgfile, char **device)
 				return -1;
 			}
 		}
+		else if (strncasecmp("giveup", buf, 6) == 0)
+		{
+			giveup = true;
+		}
+		else if (strncasecmp("dontgiveup", buf, 10) == 0)
+		{
+			giveup = false;
+		}
 		else
 		{
 			dolog(LOG_ERR, "Unrecognized configuration line %u: %s\n", line, buf);
@@ -701,6 +710,8 @@ static struct option const long_options[] = {
 	{"config",		required_argument,	NULL, 'c'},
 	{"daemonize",		no_argument,		NULL, 'd'},
 	{"nodaemonize",		no_argument,		NULL, 'f'},
+	{"giveup",		no_argument,		NULL, 'g'},
+	{"dontgiveup",		no_argument,		NULL, 'G'},
 	{"eventdevice",		required_argument,	NULL, 'e'},
 	{"help",		no_argument,		NULL, 'h'},
 	{"list-keys",		no_argument,		NULL, 'K'},
@@ -715,7 +726,7 @@ static struct option const long_options[] = {
 	{NULL,			no_argument,		NULL, 0},
 };
 
-static char short_options[] = "c:de:fhKLqu:vVy:";
+static char short_options[] = "c:de:fgGhKLqu:vVy:";
 
 static struct
 {
@@ -726,7 +737,9 @@ static struct
 	{"<file>",		"Configuration File Location"},
 	{NULL,			"Detach the program into the background"},
 	{NULL,			"Don't detach, stay in the foreground"},
-	{"<eventdevice>",	"The event device to use, default: /dev/input/event0"},
+	{NULL,			"Give up when opening the device fails (default)"},
+	{NULL,			"Do not give up when opening the device fails"},
+	{"<eventdevice>",	"The event device to use (default: /dev/input/event0)"},
 	{NULL,			"This help"},
 	{NULL,			"List the keys that are known to this program"},
 	{NULL,			"List the functions known to this program"},
@@ -762,6 +775,14 @@ int main (int argc, char **argv)
 
 		case 'f':
 			daemonize = false;
+			break;
+
+		case 'g':
+			giveup = true;
+			break;
+
+		case 'G':
+			giveup = true;
 			break;
 
 		case 'e':
@@ -943,13 +964,28 @@ int main (int argc, char **argv)
         signal(SIGUSR1, SIG_IGN);
         signal(SIGUSR2, SIG_IGN);
 
-	/* Try to open the device */
-	fd = open(device, O_RDONLY);
+	while (running)
+	{
+		/* Try to open the device */
+		fd = open(device, O_RDONLY);
+
+		/* Worked? */
+		if (fd >= 0) break;
+
+		dolog(LOG_ERR, "Couldn't open event device %s: %u\n", device, errno);
+
+		if (giveup) break;
+
+		/* Sleep a bit and try it all again, cheap enough to not flood the CPU */
+		sleep(1);
+	}
+
 	if (fd < 0)
 	{
-		perror("Couldn't open event device");
+		dolog(LOG_ERR, "Couldn't open event device %s, gave up\n", device);
 		return 1;
 	}
+
 	free(device);
 	device = NULL;
 

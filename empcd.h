@@ -20,6 +20,7 @@
 #include <getopt.h>
 #include <signal.h>
 #include <pwd.h>
+#include <errno.h>
 
 /* Linux specific... */
 #include <linux/input.h>
