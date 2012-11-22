@@ -1,0 +1,54 @@
+#!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          empcd
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:
+# Short-Description: Start epmcd
+### END INIT INFO
+
+[ -x /usr/sbin/empcd ] || exit 0
+
+. /lib/lsb/init-functions
+
+if [ -f /etc/empcd.conf ]; then
+	log_failure_msg "empcd not configured, use /usr/share/doc/empcd/empcd.conf as a template and copy it to /etc/empcd.conf, not started."
+	log_end_msg 1
+	exit 0
+fi
+
+
+case "$1" in
+	start)
+
+		log_daemon_msg "Starting the Event Music Player Client daemon" "empcd"
+		if udevd --daemon; then
+			log_end_msg $?
+		else
+			log_end_msg $?
+		fi
+		;;
+
+	stop)
+		log_daemon_msg "Starting the Event Music Player Client daemon" "empcd"
+		if start-stop-daemon --stop --exec /sbin/udevd --quiet --oknodo; then
+			log_end_msg $?
+		else
+			log_end_msg $?
+		fi
+		;;
+
+	restart|force-reload)
+		$0 stop
+		$0 start
+		;;
+
+	*)
+		echo "Usage: /etc/init.d/empcd {start|stop|restart|force-reload}"
+		exit 1
+		;;
+esac
+
+exit 0
+

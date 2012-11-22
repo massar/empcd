@@ -1,0 +1,7 @@
+empcd for Debian
+------------------
+This can be build by using the 'deb' target for make.
+Which calls simply "debian/rules binary".
+
+Jeroen Massar <jeroen@unfix.org>
+
