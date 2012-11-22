@@ -177,6 +177,11 @@ void f_exec(const char *arg, const char *args)
 	system(arg);
 }
 
+void f_quit(const char *arg, const char *args)
+{
+	running = false;
+}
+
 #define F_CMDG(fn, f)											\
 void fn(const char *arg, const char *args)								\
 {													\
@@ -360,7 +365,11 @@ static const struct empcd_funcs
 	const char *label;
 } func_map[] =
 {
+	/* empcd builtin commands */
 	{"EXEC",	f_exec,		"exec",			"<shellcmd>",		"Execute a command"},
+	{"QUIT",	f_quit,		"quit",			NULL,			"Quit empcd"},
+
+	/* MPD specific commands */
 	{"MPD_NEXT",	f_next,		"mpd_next",		NULL,			"MPD Next Track"},
 	{"MPD_PREV",	f_prev,		"mpd_prev",		NULL,			"MPD Previous Track"},
 	{"MPD_STOP",	f_stop,		"mpd_stop",		NULL,			"MPD Stop Playing"},
@@ -373,6 +382,8 @@ static const struct empcd_funcs
 	{"MPD_SAVE",	f_save,		"mpd_plst_save",	"<playlist>",		"MPD Save Playlist"},
 	{"MPD_CLEAR",	f_clear,	"mpd_plst_clear",	NULL,			"MPD Clear Playlist"},
 	{"MPD_REMOVE",	f_remove,	"mpd_plst_remove",	"<playlist>",		"MPD Remove Playlist"},
+
+	/* End */
 	{NULL,		NULL,		NULL,			NULL,			"undefined"}
 };
 
