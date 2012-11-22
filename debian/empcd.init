@@ -23,7 +23,7 @@ case "$1" in
 	start)
 
 		log_daemon_msg "Starting the Event Music Player Client daemon" "empcd"
-		if udevd --daemon; then
+		if /usr/sbin/empcd -d; then
 			log_end_msg $?
 		else
 			log_end_msg $?
@@ -32,7 +32,7 @@ case "$1" in
 
 	stop)
 		log_daemon_msg "Starting the Event Music Player Client daemon" "empcd"
-		if start-stop-daemon --stop --exec /sbin/udevd --quiet --oknodo; then
+		if start-stop-daemon --stop --exec /usr/sbin/empcd --quiet --oknodo; then
 			log_end_msg $?
 		else
 			log_end_msg $?

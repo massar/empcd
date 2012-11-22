@@ -1,3 +1,11 @@
+empcd (2005.12.12) unstable; urgency=low
+
+  * Fixed init scripts
+  * Added "exclusive access" mode Frederic Pasteleurs.
+    This defaults to on now.
+
+ -- Jeroen Massar <jeroen@unfix.org>  Mon, 12 Dec 2005 23:32:42 +0100
+
 empcd (2005.11.28) unstable; urgency=low
 
   * Initial Release

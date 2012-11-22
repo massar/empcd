@@ -9,7 +9,7 @@
 
 #include "empcd.h"
 
-#define EMPCD_VERSION "2005.11.28"
+#define EMPCD_VERSION "2005.12.12"
 #define EMPCD_VSTRING "empcd %s by Jeroen Massar <jeroen@unfix.org>\n"
 
 /* MPD functions */
@@ -23,6 +23,7 @@ mpd_Connection		*mpd = NULL;
 unsigned int		verbosity = 0, drop_uid = 0, drop_gid = 0;
 bool			daemonize = true;
 bool			running = true;
+bool			exclusive = true;
 char			*mpd_host = NULL, *mpd_port = NULL;
 
 /* When we receive a signal, we abort */
@@ -408,7 +409,7 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	 1 = all okay
 	-1 = error parsing file
 */
-int readconfig(char *cfgfile)
+int readconfig(char *cfgfile, char **device)
 {
 	unsigned int line = 0;
 
@@ -472,6 +473,29 @@ int readconfig(char *cfgfile)
 			if (mpd_port) free(mpd_port);
 			mpd_port = strdup(&buf[9]);
 		}
+		else if (strncasecmp("eventdevice ", buf, 12) == 0)
+		{
+			if (*device) free(*device);
+			*device = strdup(&buf[12]);
+		}
+		else if (strncasecmp("exclusive ", buf, 10) == 0)
+		{
+			if (strncasecmp("on", &buf[10], 2) == 0) exclusive = true;
+			else if (strncasecmp("off", &buf[10], 3) == 0) exclusive = false;
+			else
+			{
+				dolog(LOG_ERR, "Exclusive is either 'on' or 'off'\n");
+				return -1;
+			}
+		}
+		else if (strncasecmp("exclusive", buf, 9) == 0)
+		{
+			exclusive = true;
+		}
+		else if (strncasecmp("nonexclusive", buf, 12) == 0)
+		{
+			exclusive = false;
+		}
 		else if (strncasecmp("key ", buf, 4) == 0)
 		{
 			if (!set_event_from_map(&buf[4], key_event_map, key_value_map)) return -1;
@@ -519,6 +543,8 @@ static struct option const long_options[] = {
 	{"verbose",		no_argument,		NULL, 'v'},
 	{"version",		no_argument,		NULL, 'V'},
 	{"verbosity",		required_argument,	NULL, 'y'},
+	{"exclusive",		no_argument,		NULL, 'x'},
+	{"nonexclusive",	no_argument,		NULL, 'X'},
 	{NULL,			no_argument,		NULL, 0},
 };
 
@@ -542,6 +568,8 @@ static struct
 	{NULL,			"Increase the verbosity level by 1"},
 	{NULL,			"Show the version of this program"},
 	{"<level>",		"Set the verbosity level to <level>"},
+	{NULL,			"Exclusive device access (default)"},
+	{NULL,			"Non-Exclusive device access"},
 	{NULL,			NULL}
 };
 
@@ -629,6 +657,12 @@ int main (int argc, char **argv)
 		case 'V':
 			fprintf(stderr, EMPCD_VSTRING, EMPCD_VERSION);
 			return 1;
+		case 'x':
+			exclusive = true;
+			break;
+		case 'X':
+			exclusive = false;
+			break;
 		default:
 			if (j != 0) fprintf(stderr, "Unknown short option '%c'\n", j);
 			else fprintf(stderr, "Unknown long option\n");
@@ -655,20 +689,20 @@ int main (int argc, char **argv)
 			char buf[256];
 			snprintf(buf, sizeof(buf), "%s/%s", cfgfile, ".empcd.conf");
 			cfgfile = conffile = strdup(buf);
-			j = readconfig(cfgfile);
+			j = readconfig(cfgfile, &device);
 		}
 		else j = 0;
 		if (j == 0)
 		{
 			cfgfile = "/etc/empcd.conf";
-			j = readconfig(cfgfile);
+			j = readconfig(cfgfile, &device);
 		}
 	}
 	else
 	{
 		/* Try specified config */
 		cfgfile = conffile;
-		j = readconfig(cfgfile);
+		j = readconfig(cfgfile, &device);
 	}
 
 	if (j != 1)
@@ -731,6 +765,10 @@ int main (int argc, char **argv)
 	free(device);
 	device = NULL;
 
+	/* Obtain Exclusive device access */
+	if (exclusive) ioctl(fd, EVIOCGRAB, 1);
+
+	/* Setup MPD connectivity */
 	mpd = empcd_setup();
 	if (!mpd)
 	{
