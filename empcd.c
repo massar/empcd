@@ -730,10 +730,10 @@ void handle_event(struct input_event *ev)
 static struct option const long_options[] = {
 	{"config",		required_argument,	NULL, 'c'},
 	{"daemonize",		no_argument,		NULL, 'd'},
+	{"eventdevice",		required_argument,	NULL, 'e'},
 	{"nodaemonize",		no_argument,		NULL, 'f'},
 	{"giveup",		no_argument,		NULL, 'g'},
 	{"dontgiveup",		no_argument,		NULL, 'G'},
-	{"eventdevice",		required_argument,	NULL, 'e'},
 	{"help",		no_argument,		NULL, 'h'},
 	{"list-keys",		no_argument,		NULL, 'K'},
 	{"list-functions",	no_argument,		NULL, 'L'},
@@ -741,13 +741,13 @@ static struct option const long_options[] = {
 	{"user",		required_argument,	NULL, 'u'},
 	{"verbose",		no_argument,		NULL, 'v'},
 	{"version",		no_argument,		NULL, 'V'},
-	{"verbosity",		required_argument,	NULL, 'y'},
 	{"exclusive",		no_argument,		NULL, 'x'},
 	{"nonexclusive",	no_argument,		NULL, 'X'},
+	{"verbosity",		required_argument,	NULL, 'y'},
 	{NULL,			no_argument,		NULL, 0},
 };
 
-static char short_options[] = "c:de:fgGhKLqu:vVy:";
+static char short_options[] = "c:de:fgGhKLqu:vVxXy:";
 
 static struct
 {
@@ -755,22 +755,22 @@ static struct
 	char *desc;
 } desc_options[] =
 {
-	{"<file>",		"Configuration File Location"},
-	{NULL,			"Detach the program into the background"},
-	{NULL,			"Don't detach, stay in the foreground"},
-	{NULL,			"Give up when opening the device fails (default)"},
-	{NULL,			"Do not give up when opening the device fails"},
-	{"<eventdevice>",	"The event device to use (default: /dev/input/event0)"},
-	{NULL,			"This help"},
-	{NULL,			"List the keys that are known to this program"},
-	{NULL,			"List the functions known to this program"},
-	{NULL,			"Lower the verbosity level to 0 (quiet)"},
-	{"<username>",		"Drop priveleges to <user>"},
-	{NULL,			"Increase the verbosity level by 1"},
-	{NULL,			"Show the version of this program"},
-	{"<level>",		"Set the verbosity level to <level>"},
-	{NULL,			"Exclusive device access (default)"},
-	{NULL,			"Non-Exclusive device access"},
+	/* c:	*/ {"<file>",		"Configuration File Location"},
+	/* d	*/ {NULL,		"Detach the program into the background"},
+	/* e:	*/ {"<eventdevice>",	"The event device to use (default: /dev/input/event0)"},
+	/* f	*/ {NULL,		"Don't detach, stay in the foreground"},
+	/* g	*/ {NULL,		"Give up when opening the device fails (default)"},
+	/* G:	*/ {NULL,		"Do not give up when opening the device fails"},
+	/* h	*/ {NULL,		"This help"},
+	/* K	*/ {NULL,		"List the keys that are known to this program"},
+	/* L	*/ {NULL,		"List the functions known to this program"},
+	/* q	*/ {NULL,		"Lower the verbosity level to 0 (quiet)"},
+	/* u:	*/ {"<username>",	"Drop priveleges to <user>"},
+	/* v	*/ {NULL,		"Increase the verbosity level by 1"},
+	/* V	*/ {NULL,		"Show the version of this program"},
+	/* x	*/ {NULL,		"Exclusive device access (default)"},
+	/* X	*/ {NULL,		"Non-Exclusive device access"},
+	/* y:	*/ {"<level>",		"Set the verbosity level to <level>"},
 	{NULL,			NULL}
 };
 
@@ -794,6 +794,11 @@ int main (int argc, char **argv)
 			daemonize = true;
 			break;
 
+		case 'e':
+			if (device) free(device);
+			device = strdup(optarg);
+			break;
+
 		case 'f':
 			daemonize = false;
 			break;
@@ -804,11 +809,6 @@ int main (int argc, char **argv)
 
 		case 'G':
 			giveup = true;
-			break;
-
-		case 'e':
-			if (device) free(device);
-			device = strdup(optarg);
 			break;
 
 		case 'h':
@@ -832,17 +832,17 @@ int main (int argc, char **argv)
 
 			return 1;
 
-		case 'L':
-			for (i=0; func_map[i].name; i++)
-			{
-				fprintf(stderr, "%-15s %20s %s\n", func_map[i].format, func_map[i].args ? func_map[i].args : "", func_map[i].label);
-			}
-			return 0;
-
 		case 'K':
 			for (i=0; key_event_map[i].code != EMPCD_MAPPING_END; i++)
 			{
 				fprintf(stderr, "%-25s %s\n", key_event_map[i].name, key_event_map[i].label);
+			}
+			return 0;
+
+		case 'L':
+			for (i=0; func_map[i].name; i++)
+			{
+				fprintf(stderr, "%-15s %20s %s\n", func_map[i].format, func_map[i].args ? func_map[i].args : "", func_map[i].label);
 			}
 			return 0;
 
@@ -873,10 +873,6 @@ int main (int argc, char **argv)
 			verbosity++;
 			break;
 
-		case 'y':
-			verbosity = atoi(optarg);
-			break;
-
 		case 'V':
 			fprintf(stderr, EMPCD_VSTRING, EMPCD_VERSION);
 			return 1;
@@ -887,6 +883,10 @@ int main (int argc, char **argv)
 
 		case 'X':
 			exclusive = false;
+			break;
+
+		case 'y':
+			verbosity = atoi(optarg);
 			break;
 
 		default:

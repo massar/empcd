@@ -4,6 +4,8 @@ empcd (2012.11.22) stable; urgency=low
   * Allow entering of numeric events, eg with: key 165 UP mpd_next
   * Minor formatting fixups
   * Add 'giveup' and 'dontgiveup' option for retry on device open
+  * Fixup options ordering (hinted by following github commit:
+    https://github.com/Jille/empcd/commit/84a5b76f3fdeda5169d3654c6d9c35978124cada)
 
   Lee Dolsen (https://github.com/ldolse/empcd/)
   * Updated keytable to reflect IR & Multimedia additions to the kernel
