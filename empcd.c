@@ -83,13 +83,13 @@ mpd_Connection *empcd_setup()
 
 	/* parse password and host */
 	test = strstr(mpd_host,"@");
-        password_len = test-mpd_host;
+	password_len = test - mpd_host;
 	if (test) parsed_len++;
 
 	if (!test) password_len = 0;
-        if (test && password_len != 0) parsed_len += password_len;
+	if (test && password_len != 0) parsed_len += password_len;
 
-	mpd = mpd_newConnection(mpd_host+parsed_len, iport, 10);
+	mpd = mpd_newConnection(mpd_host + parsed_len, iport, 10);
 	if (!mpd) return NULL;
 
 	if (mpd->error)
@@ -182,7 +182,7 @@ void fn(const char *arg, const char *args)								\
 {													\
 	int retries;											\
 													\
-	if ((!arg || strlen(arg) == 0) && args)									\
+	if ((!arg || strlen(arg) == 0) && args)								\
 	{												\
 		dolog(LOG_WARNING, "%s requires '%s' as an argument, none given, ignoring\n", #fn);	\
 		return;											\
@@ -500,7 +500,7 @@ int readconfig(char *cfgfile, char **device)
 		for (i=0,j=0; i<n; i++)
 		{
 			if (buf2[i] == '\t') buf2[i] = ' ';
-			if ((i == 0 || (i > 0 && buf2[i-1] == ' ')) &&
+			if (	(i == 0 || (i > 0 && buf2[i-1] == ' ')) &&
 				(buf2[i] == ' ' || buf2[i] == '\t'))
 			{
 				continue;
@@ -931,7 +931,7 @@ int main (int argc, char **argv)
 		{
 			dolog(LOG_ERR, "Couldn't fork for daemonization\n");
 			return 1;
-                }
+		}
 
 		/* Exit the mother fork */
 		if (j != 0) return 0;
@@ -961,8 +961,8 @@ int main (int argc, char **argv)
 	signal(SIGTSTP, SIG_IGN);
 	signal(SIGTTIN, SIG_IGN);
 	signal(SIGTTOU, SIG_IGN);
-        signal(SIGUSR1, SIG_IGN);
-        signal(SIGUSR2, SIG_IGN);
+	signal(SIGUSR1, SIG_IGN);
+	signal(SIGUSR2, SIG_IGN);
 
 	while (running)
 	{
