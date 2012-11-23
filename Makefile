@@ -49,7 +49,7 @@ install: all
 	@mkdir -p ${DESTDIR}${dirsbin}
 	@cp empcd ${DESTDIR}${dirsbin}
 	@mkdir -p ${DESTDIR}${dirdoc}
-	@cp README ${DESTDIR}${dirdoc}
+	@cp README.md ${DESTDIR}${dirdoc}
 	@echo "Configuration..."
 	@mkdir -p ${DESTDIR}${diretc}
 	@echo "Installation into ${DESTDIR}/ completed"
