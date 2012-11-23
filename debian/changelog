@@ -2,6 +2,8 @@ empcd (2012.11.23) stable; urgency=low
   * Fixup function naming confusion (https://github.com/massar/empcd/issues/2)
   * Update mail addresses
   * Bump version number
+  * Add 'nompd' mode
+  * Better error reporting for configuration file reader
 
  -- Jeroen Massar <jeroen@massar.ch>  Fri, 23 Nov 2012 16:38:42 +0100
 

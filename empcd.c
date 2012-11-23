@@ -25,6 +25,7 @@ bool			daemonize = true;
 bool			running = true;
 bool			exclusive = true;
 bool			giveup = true;
+bool			nompd = false;
 char			*mpd_host = NULL, *mpd_port = NULL;
 
 /* When we receive a signal, we abort */
@@ -42,7 +43,10 @@ void dologA(int level, const char *fmt, va_list ap)
 
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 
-	if (daemonize) syslog(LOG_LOCAL7|level, buf);
+	if (daemonize)
+	{
+		syslog(LOG_LOCAL7|level, buf);
+	}
 	else
 	{
 		FILE *out = (level == LOG_DEBUG || level == LOG_ERR ? stderr : stdout);
@@ -73,6 +77,18 @@ mpd_Connection *empcd_setup()
 	int		password_len = 0;
 	int		parsed_len = 0;
 	mpd_Connection	*mpd = NULL;
+
+	if (nompd)
+	{
+		dolog(LOG_ERR, "MPD connection disabled\n");
+		return NULL;
+	}
+
+	if (!mpd_host || !mpd_port)
+	{
+		dolog(LOG_ERR, "Either MPD_HOST or MPD_PORT not configured\n");
+		return NULL;
+	}
 	
 	iport = strtol(mpd_port, &test, 10);
 	if (iport <= 0 || test[0] != '\0')
@@ -118,6 +134,8 @@ mpd_Connection *empcd_setup()
 
 bool mpd_check()
 {
+	if (nompd) return true;
+
 	if (!mpd->error) return false;
 
 	/* Ignore timeouts */
@@ -150,6 +168,8 @@ mpd_Status *empcd_status()
 {
 	int retry = 5;
 	mpd_Status *s = NULL;
+
+	if (nompd) return NULL;
 
 	while (retry > 0)
 	{
@@ -187,6 +207,12 @@ void fn(const char *arg, const char *args)								\
 {													\
 	int retries;											\
 													\
+	if (nompd)											\
+	{												\
+		dolog(LOG_INFO, "%s not executing as MPD is disabled (nompd)\n");			\
+		return;											\
+	}												\
+													\
 	if ((!arg || strlen(arg) == 0) && args)								\
 	{												\
 		dolog(LOG_WARNING, "%s requires '%s' as an argument, none given, ignoring\n", #fn);	\
@@ -220,8 +246,9 @@ void f_volume(const char *arg, const char *args)
 {
 	int	dir = 0, volume = 0, i = 0, retry = 5;
 	bool	perc = false;
+	mpd_Status *status;
 
-	mpd_Status *status = empcd_status(mpd);
+	status = empcd_status(mpd);
 	if (!status) return;
 
 	if (arg[0] == '-')	{ i++; dir = -1; }
@@ -358,32 +385,33 @@ void f_random(const char *arg, const char *args)
 
 static const struct empcd_funcs
 {
-	void (*function)(const char *arg, const char *args);
-	const char *name;
-	const char *args;
-	const char *desc;
+	void		(*function)(const char *arg, const char *args);
+	bool		requires_mpd;
+	const char	*name;
+	const char	*args;
+	const char	*desc;
 } func_map[] =
 {
 	/* empcd builtin commands */
-	{ f_exec,	"exec",			"<shellcmd>",		"Execute a command"							},
-	{ f_quit,	"quit",			NULL,			"Quit empcd"								},
+	{ f_exec,	false, "exec",			"<shellcmd>",		"Execute a command"							},
+	{ f_quit,	false, "quit",			NULL,			"Quit empcd"								},
 
 	/* MPD specific commands */
-	{ f_next,	"mpd_next",		NULL,			"MPD Next Track"							},
-	{ f_prev,	"mpd_prev",		NULL,			"MPD Previous Track"							},
-	{ f_stop,	"mpd_stop",		NULL,			"MPD Stop Playing"							},
-	{ f_play,	"mpd_play",		NULL,			"MPD Start Playing"							},
-	{ f_pause,	"mpd_pause",		"[toggle|on|off]",	"MPD Pause Toggle or Set"						},
-	{ f_seek,	"mpd_seek",		"[+|-]<val>[%]",	"MPD Seek direct or relative (+|-) percentage when ends in %"		},
-	{ f_volume,	"mpd_volume",		"[+|-]<val>[%]",	"MPD Volume direct or relative (+|-) percentage when ends in %"		},
-	{ f_random,	"mpd_random",		"[toggle|on|off]",	"MPD Random Toggle or Set"						},
-	{ f_load,	"mpd_plst_load",	"<playlist>",		"MPD Load Playlist"							},
-	{ f_save,	"mpd_plst_save",	"<playlist>",		"MPD Save Playlist"							},
-	{ f_clear,	"mpd_plst_clear",	NULL,			"MPD Clear Playlist"							},
-	{ f_remove,	"mpd_plst_remove",	"<playlist>",		"MPD Remove Playlist"							},
+	{ f_next,	true, "mpd_next",		NULL,			"MPD Next Track"							},
+	{ f_prev,	true, "mpd_prev",		NULL,			"MPD Previous Track"							},
+	{ f_stop,	true, "mpd_stop",		NULL,			"MPD Stop Playing"							},
+	{ f_play,	true, "mpd_play",		NULL,			"MPD Start Playing"							},
+	{ f_pause,	true, "mpd_pause",		"[toggle|on|off]",	"MPD Pause Toggle or Set"						},
+	{ f_seek,	true, "mpd_seek",		"[+|-]<val>[%]",	"MPD Seek direct or relative (+|-) percentage when ends in %"		},
+	{ f_volume,	true, "mpd_volume",		"[+|-]<val>[%]",	"MPD Volume direct or relative (+|-) percentage when ends in %"		},
+	{ f_random,	true, "mpd_random",		"[toggle|on|off]",	"MPD Random Toggle or Set"						},
+	{ f_load,	true, "mpd_plst_load",		"<playlist>",		"MPD Load Playlist"							},
+	{ f_save,	true, "mpd_plst_save",		"<playlist>",		"MPD Save Playlist"							},
+	{ f_clear,	true, "mpd_plst_clear",		NULL,			"MPD Clear Playlist"							},
+	{ f_remove,	true, "mpd_plst_remove",	"<playlist>",		"MPD Remove Playlist"							},
 
 	/* End */
-	{ NULL,		NULL,			NULL,			"undefined"								}
+	{ NULL,		false, NULL,			NULL,			"undefined"								}
 };
 
 /********************************************************************/
@@ -492,6 +520,12 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 		func_map[func].name, func_map[func].desc,
 		arg ? arg : "<none>");
 
+	if (func_map[func].requires_mpd && nompd)
+	{
+		dolog(LOG_ERR, "Function requires MPD but MPD is disabled\n");
+		return false;
+	}
+
 	return set_event(EV_KEY, event_code, value_map[value].code, func_map[func].function, arg, func_map[func].args);
 }
 
@@ -499,20 +533,22 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 
 /*
 	 0 = failed to open file
-	 1 = all okay
-	-1 = error parsing file
+	>0 = all okay (lines read)
+	<0 = error parsing file (line number)
 */
 int readconfig(char *cfgfile, char **device)
 {
-	unsigned int line = 0;
+	unsigned int	line = 0;
+	int		ret = 0;
+	FILE		*f;
 
-	FILE *f = fopen(cfgfile, "r");
+	f = fopen(cfgfile, "r");
 
 	dolog(LOG_DEBUG, "ReadConfig(%s) = %s\n", cfgfile, f ? "ok" : "error");
 
 	if (!f) return 0;
 
-	while (!feof(f))
+	while (!feof(f) && ret == 0)
 	{
 		char buf[1024], buf2[1024];
 		unsigned int n, i = 0, j = 0;
@@ -581,7 +617,8 @@ int readconfig(char *cfgfile, char **device)
 			else
 			{
 				dolog(LOG_ERR, "Exclusive is either 'on' or 'off'\n");
-				return -1;
+				ret = -line;
+				break;
 			}
 		}
 		else if (strncasecmp("exclusive", buf, 9) == 0)
@@ -594,7 +631,11 @@ int readconfig(char *cfgfile, char **device)
 		}
 		else if (strncasecmp("key ", buf, 4) == 0)
 		{
-			if (!set_event_from_map(&buf[4], key_event_map, key_value_map)) return -1;
+			if (!set_event_from_map(&buf[4], key_event_map, key_value_map))
+			{
+				ret = -line;
+				break;
+			}
 		}
 		else if (strncasecmp("user ", buf, 5) == 0)
 		{
@@ -610,7 +651,8 @@ int readconfig(char *cfgfile, char **device)
 			else
 			{
 				dolog(LOG_ERR, "Couldn't find user %s\n", optarg);
-				return -1;
+				ret = -line;
+				break;
 			}
 		}
 		else if (strncasecmp("giveup", buf, 6) == 0)
@@ -621,16 +663,21 @@ int readconfig(char *cfgfile, char **device)
 		{
 			giveup = false;
 		}
+		else if (strncasecmp("nompd", buf, 5) == 0)
+		{
+			nompd = true;
+		}
 		else
 		{
 			dolog(LOG_ERR, "Unrecognized configuration line %u: %s\n", line, buf);
-			return -1;
+			ret = -line;
+			break;
 		}
 	}
 
 	fclose(f);
 
-	return 1; 
+	return ret == 0 ? (int)line : ret;
 }
 
 void handle_event(struct input_event *ev)
@@ -679,7 +726,7 @@ void handle_event(struct input_event *ev)
 		}
 
 		if (	(evt != NULL && verbosity > 2) ||
-				(evt == NULL && verbosity > 5))
+			(evt == NULL && verbosity > 5))
 		{
 			char				buf[1024];
 			unsigned int			n = 0;
@@ -747,6 +794,7 @@ static struct option const long_options[] = {
 	{"help",		no_argument,		NULL, 'h'},
 	{"list-keys",		no_argument,		NULL, 'K'},
 	{"list-functions",	no_argument,		NULL, 'L'},
+	{"nompd",		no_argument,		NULL, 'n'},
 	{"quiet",		no_argument,		NULL, 'q'},
 	{"user",		required_argument,	NULL, 'u'},
 	{"verbose",		no_argument,		NULL, 'v'},
@@ -757,7 +805,7 @@ static struct option const long_options[] = {
 	{NULL,			no_argument,		NULL, 0},
 };
 
-static char short_options[] = "c:de:fgGhKLqu:vVxXy:";
+static char short_options[] = "c:de:fgGhKLnqu:vVxXy:";
 
 static struct
 {
@@ -774,6 +822,7 @@ static struct
 	/* h	*/ {NULL,		"This help"},
 	/* K	*/ {NULL,		"List the keys that are known to this program"},
 	/* L	*/ {NULL,		"List the functions known to this program"},
+	/* n	*/ {NULL,		"no-mpd mode, does not connect to mpd"},
 	/* q	*/ {NULL,		"Lower the verbosity level to 0 (quiet)"},
 	/* u:	*/ {"<username>",	"Drop priveleges to <user>"},
 	/* v	*/ {NULL,		"Increase the verbosity level by 1"},
@@ -856,7 +905,11 @@ int main (int argc, char **argv)
 			}
 			return 0;
 
-		case 'q':	
+		case 'n':
+			nompd = true;
+			break;
+
+		case 'q':
 			verbosity++;
 			break;
 
@@ -943,16 +996,27 @@ int main (int argc, char **argv)
 		j = readconfig(cfgfile, &device);
 	}
 
-	if (conffile) free(conffile);
-
-	if (j != 1)
+	if (j <= 0)
 	{
-		if (j == 0) dolog(LOG_ERR, "Configuration file '%s' not found\n", cfgfile);
-		else if (j == -1) dolog(LOG_ERR, "Parse error in configuration file '%s'\n", cfgfile);
+		if (j == 0)
+		{
+			dolog(LOG_ERR, "Configuration file '%s' not found\n", cfgfile);
+		}
+		else
+		{
+			dolog(LOG_ERR, "Parse error in configuration file '%s' on line %u\n", cfgfile, (unsigned int)-j);
+		}
 
 		if (device) free(device);
+		if (conffile) free(conffile);
 
 		return 1;
+	}
+
+	if (conffile)
+	{
+		free(conffile);
+		conffile = NULL;
 	}
 
 	if (daemonize)
@@ -1023,16 +1087,20 @@ int main (int argc, char **argv)
 	/* Obtain Exclusive device access */
 	if (exclusive) ioctl(fd, EVIOCGRAB, 1);
 
-	/* Setup MPD connectivity */
-	mpd = empcd_setup();
-	if (!mpd)
+	/* Allow usage of empcd without contacting MPD, thus effectively making it a input daemon */
+	if (!nompd)
 	{
-		dolog(LOG_ERR, "Couldn't contact MPD server\n");
-		return 1;
+		/* Setup MPD connectivity */
+		mpd = empcd_setup();
+		if (!mpd)
+		{
+			dolog(LOG_ERR, "Couldn't contact MPD server\n");
+			return 1;
+		}
 	}
 
 	/*
-	 * Drop our root priveleges.
+	 * Drop our root privileges.
 	 * We don't need them anymore anyways
 	 */
 	if (drop_uid != 0)
@@ -1047,6 +1115,7 @@ int main (int argc, char **argv)
 		setgid(drop_gid);
 	}
 
+	dolog(LOG_INFO, "Running as PID %u, processing your strokes\n", getpid());
 	while (running)
 	{
 		struct timeval	tv;
@@ -1065,7 +1134,7 @@ int main (int argc, char **argv)
 
 	dolog(LOG_INFO, "empcd shutting down\n");
 
-	mpd_closeConnection(mpd);
+	if (!nompd) mpd_closeConnection(mpd);
 
 	close(fd);
 	return 0;
