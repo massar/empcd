@@ -1,7 +1,7 @@
 Source: empcd
 Section: net
 Priority: optional
-Maintainer: Jeroen Massar <jeroen@unfix.org>
+Maintainer: Jeroen Massar <jeroen@massar.ch>
 Build-Depends: debhelper (>> 4.2)
 Standards-Version: 3.6.2.1
 

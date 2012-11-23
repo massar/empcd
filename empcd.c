@@ -1,6 +1,6 @@
 /***********************************************************
  EMPCd - Event Music Player Client daemon
- by Jeroen Massar <jeroen@unfix.org>
+ by Jeroen Massar <jeroen@massar.ch>
 ************************************************************
  $Author: jeroen $
  $Id: $
@@ -9,8 +9,8 @@
 
 #include "empcd.h"
 
-#define EMPCD_VERSION "2008.02.16"
-#define EMPCD_VSTRING "empcd %s by Jeroen Massar <jeroen@unfix.org>\n"
+#define EMPCD_VERSION "2012.11.23"
+#define EMPCD_VSTRING "empcd %s by Jeroen Massar <jeroen@massar.ch>\n"
 
 /* MPD functions */
 #include "support/mpc-0.12.2/src/libmpdclient.h"

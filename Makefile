@@ -1,13 +1,13 @@
 # /**************************************
-#  EventMusicPlayerClient daemon
-#  by Jeroen Massar <jeroen@unfix.org>
+#  EventMusicPlayerClient daemon (empcd)
+#  by Jeroen Massar <jeroen@massar.ch>
 # ***************************************
 # $Author: $
 # $Id: $
 # $Date: $
 # **************************************/
 #
-# Source Makefile for empcd - Jeroen Massar <jeroen@unfix.org>
+# Source Makefile for empcd
 #
 
 BINS	= empcd
