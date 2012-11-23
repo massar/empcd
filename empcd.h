@@ -59,7 +59,7 @@ struct empcd_mapping
 {
 	uint16_t		code;
 	char			name[32];
-	char			label[32];
+	char			desc[32];
 };
 
 #define EV_KEY_UP		0

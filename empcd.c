@@ -358,33 +358,32 @@ void f_random(const char *arg, const char *args)
 
 static const struct empcd_funcs
 {
-	const char *name;
 	void (*function)(const char *arg, const char *args);
-	const char *format;
+	const char *name;
 	const char *args;
-	const char *label;
+	const char *desc;
 } func_map[] =
 {
 	/* empcd builtin commands */
-	{"EXEC",	f_exec,		"exec",			"<shellcmd>",		"Execute a command"},
-	{"QUIT",	f_quit,		"quit",			NULL,			"Quit empcd"},
+	{ f_exec,	"exec",			"<shellcmd>",		"Execute a command"							},
+	{ f_quit,	"quit",			NULL,			"Quit empcd"								},
 
 	/* MPD specific commands */
-	{"MPD_NEXT",	f_next,		"mpd_next",		NULL,			"MPD Next Track"},
-	{"MPD_PREV",	f_prev,		"mpd_prev",		NULL,			"MPD Previous Track"},
-	{"MPD_STOP",	f_stop,		"mpd_stop",		NULL,			"MPD Stop Playing"},
-	{"MPD_PLAY",	f_play,		"mpd_play",		NULL,			"MPD Start Playing"},
-	{"MPD_PAUSE",	f_pause,	"mpd_pause",		"[toggle|on|off]",	"MPD Pause Toggle or Set"},
-	{"MPD_SEEK",	f_seek,		"mpd_seek",		"[+|-]<val>[%]",	"MPD Seek direct or relative (+|-) percentage when ends in %"},
-	{"MPD_VOLUME",	f_volume,	"mpd_volume",		"[+|-]<val>[%]",	"MPD Volume direct or relative (+|-) percentage when ends in %"},
-	{"MPD_RANDOM",	f_random,	"mpd_random",		"[toggle|on|off]",	"MPD Random Toggle or Set"},
-	{"MPD_LOAD",	f_load,		"mpd_plst_load",	"<playlist>",		"MPD Load Playlist"},
-	{"MPD_SAVE",	f_save,		"mpd_plst_save",	"<playlist>",		"MPD Save Playlist"},
-	{"MPD_CLEAR",	f_clear,	"mpd_plst_clear",	NULL,			"MPD Clear Playlist"},
-	{"MPD_REMOVE",	f_remove,	"mpd_plst_remove",	"<playlist>",		"MPD Remove Playlist"},
+	{ f_next,	"mpd_next",		NULL,			"MPD Next Track"							},
+	{ f_prev,	"mpd_prev",		NULL,			"MPD Previous Track"							},
+	{ f_stop,	"mpd_stop",		NULL,			"MPD Stop Playing"							},
+	{ f_play,	"mpd_play",		NULL,			"MPD Start Playing"							},
+	{ f_pause,	"mpd_pause",		"[toggle|on|off]",	"MPD Pause Toggle or Set"						},
+	{ f_seek,	"mpd_seek",		"[+|-]<val>[%]",	"MPD Seek direct or relative (+|-) percentage when ends in %"		},
+	{ f_volume,	"mpd_volume",		"[+|-]<val>[%]",	"MPD Volume direct or relative (+|-) percentage when ends in %"		},
+	{ f_random,	"mpd_random",		"[toggle|on|off]",	"MPD Random Toggle or Set"						},
+	{ f_load,	"mpd_plst_load",	"<playlist>",		"MPD Load Playlist"							},
+	{ f_save,	"mpd_plst_save",	"<playlist>",		"MPD Save Playlist"							},
+	{ f_clear,	"mpd_plst_clear",	NULL,			"MPD Clear Playlist"							},
+	{ f_remove,	"mpd_plst_remove",	"<playlist>",		"MPD Remove Playlist"							},
 
 	/* End */
-	{NULL,		NULL,		NULL,			NULL,			"undefined"}
+	{ NULL,		NULL,			NULL,			"undefined"								}
 };
 
 /********************************************************************/
@@ -419,7 +418,7 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 			event = 0, event_code = 0,
 			value = 0, func = 0;
 	void		(*what)(char *arg);
-	char		*arg = NULL, *event_name = "custom", *event_label = "custom";
+	char		*arg = NULL, *event_name = "custom", *event_desc = "custom";
 
 	/* Not a numeric value? */
 	if (sscanf(&buf[o], "%u", &i) == 1 && i == 0)
@@ -447,7 +446,7 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 		/* This is our event_code */
 		event_code = event_map[i].code;
 		event_name = event_map[i].name;
-		event_label = event_map[i].label;
+		event_desc = event_map[i].desc;
 		event = i;
 	}
 
@@ -488,9 +487,9 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	if (len > o) arg = &buf[o];
 
 	dolog(LOG_DEBUG, "Mapping Event %s (%s/%u) %s (%s) to do %s (%s) with arg %s\n",
-		event_name, event_label, event_code,
-		value_map[value].name, value_map[value].label,
-		func_map[func].name, func_map[func].label,
+		event_name, event_desc, event_code,
+		value_map[value].name, value_map[value].desc,
+		func_map[func].name, func_map[func].desc,
 		arg ? arg : "<none>");
 
 	return set_event(EV_KEY, event_code, value_map[value].code, func_map[func].function, arg, func_map[func].args);
@@ -717,10 +716,10 @@ void handle_event(struct input_event *ev)
 
 			if (map)
 			{
-				n += snprintf(&buf[n], sizeof(buf)-n, ": %s, name: %s, label: %s",
+				n += snprintf(&buf[n], sizeof(buf)-n, ": %s, name: %s, desc: %s",
 						val ? val->name : "<unknown value>",
 						map->name ? map->name : "<unknown name>",
-						map->label ? map->label : "");
+						map->desc ? map->desc : "");
 			}
 
 			if (evt)
@@ -846,14 +845,14 @@ int main (int argc, char **argv)
 		case 'K':
 			for (i=0; key_event_map[i].code != EMPCD_MAPPING_END; i++)
 			{
-				fprintf(stderr, "%-25s %s\n", key_event_map[i].name, key_event_map[i].label);
+				fprintf(stderr, "%-25s %s\n", key_event_map[i].name, key_event_map[i].desc);
 			}
 			return 0;
 
 		case 'L':
 			for (i=0; func_map[i].name; i++)
 			{
-				fprintf(stderr, "%-15s %20s %s\n", func_map[i].format, func_map[i].args ? func_map[i].args : "", func_map[i].label);
+				fprintf(stderr, "%-15s %20s %s\n", func_map[i].name, func_map[i].args ? func_map[i].args : "", func_map[i].desc);
 			}
 			return 0;
 
