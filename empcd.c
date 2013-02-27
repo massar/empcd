@@ -436,6 +436,35 @@ bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const
 	return true;
 }
 
+bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *func_, char **arg);
+bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *func_, char **arg)
+{
+	unsigned int i, o = *o_, l;
+
+	/* Figure out the function */
+	for (i=0; func_map[i].name != NULL; i++)
+	{
+		l = strlen(func_map[i].name);
+		if (len != o+l && (len < o+l || buf[o+l] != ' ')) continue;
+		if (strncasecmp(&buf[o], func_map[i].name, l) == 0) break;
+	}
+
+	if (func_map[i].name == NULL)
+	{
+		*o_ = o;
+		return false;
+	}
+	*func_ = i;
+
+	o += l+1;
+	if (len > o) *arg = &buf[o];
+	else *arg = NULL;
+
+	*o_ = o;
+
+	return true;
+}
+
 /*
 	KEY_KPSLASH DOWN f_seek -1
 	<key> <value> <action> <arg>
@@ -494,25 +523,15 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	}
 	value = i;
 
+	o += l+1;
 
 	/* Figure out the function */
-	o += l+1;
-	for (i=0; func_map[i].name != NULL; i++)
-	{
-		l = strlen(func_map[i].name);
-		if (len != o+l && (len < o+l || buf[o+l] != ' ')) continue;
-		if (strncasecmp(&buf[o], func_map[i].name, l) == 0) break;
-	}
-
-	if (func_map[i].name == NULL)
+	if (!which_func(buf, len, &o, &i, &arg))
 	{
 		dolog(LOG_DEBUG, "Undefined Function at %u in '%s'\n", o, buf);
 		return false;
 	}
 	func = i;
-
-	o += l+1;
-	if (len > o) arg = &buf[o];
 
 	dolog(LOG_DEBUG, "Mapping Event %s (%s/%u) %s (%s) to do %s (%s) with arg %s\n",
 		event_name, event_desc, event_code,
@@ -527,6 +546,56 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	}
 
 	return set_event(EV_KEY, event_code, value_map[value].code, func_map[func].function, arg, func_map[func].args);
+}
+
+bool set_event_from_custom(char *buf)
+{
+	unsigned int	type, code, value;
+	unsigned int	o, c = 0, func;
+	char		*arg;
+
+	dolog(LOG_ERR, "Custom Event: '%s'\n", buf);
+
+	if (sscanf(buf, "%u %u %u ", &type, &code, &value) != 3)
+	{
+		dolog(LOG_ERR, "'custom' requires a numeric type, code and value\n");
+		return false;
+	}
+
+	/* Check if they are all max 16 bits */
+	if (type > 0xffff || code > 0xffff || value > 0xffff)
+	{
+		dolog(LOG_ERR, "'custom' type/code/value are only 16bits, value provided too large\n");
+		return false;
+	}
+
+	/* Skip over the type/code/value */
+	for (o = 0; c < 3 && buf[o] != '\0'; o++)
+	{
+		if (buf[o] == ' ') c++;
+	}
+
+	if (c != 3 || buf[o] == '\0')
+	{
+		dolog(LOG_ERR, "'custom' requires a numeric type, code and value plus a function and optional arguments\n");
+		return false;
+	}
+
+	if (!which_func(buf, strlen(buf), &o, &func, &arg)) return false;
+
+	dolog(LOG_DEBUG,
+		"Mapping Custom Event (type %u, code %u, value %u) to do %s (%s) with arg %s\n",
+		type, code, value,
+		func_map[func].name, func_map[func].desc,
+		arg ? arg : "<none>");
+
+	if (func_map[func].requires_mpd && nompd)
+	{
+		dolog(LOG_ERR, "Function requires MPD but MPD is disabled\n");
+		return false;
+	}
+
+	return set_event(type, code, value, func_map[func].function, arg, func_map[func].args);
 }
 
 /********************************************************************/
@@ -632,6 +701,14 @@ int readconfig(char *cfgfile, char **device)
 		else if (strncasecmp("key ", buf, 4) == 0)
 		{
 			if (!set_event_from_map(&buf[4], key_event_map, key_value_map))
+			{
+				ret = -line;
+				break;
+			}
+		}
+		else if (strncasecmp("custom ", buf, 7) == 0)
+		{
+			if (!set_event_from_custom(&buf[7]))
 			{
 				ret = -line;
 				break;
