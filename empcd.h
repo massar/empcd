@@ -49,17 +49,24 @@ struct empcd_events
 	uint16_t		type;
 	uint16_t 		code;
 	int32_t			value;
+	int32_t			prev_value;
+	bool			norepeat;
+
 	void			(*action)(const char *arg, const char *args);
 	const char		*args, *needargs;
 };
 
+/* EV_KEY_UP but signal that there is no repeat; thus, the case where REPEAT and then an UP event happen */
+#define EMPCD_KEY_UPNR		0xfffe
+
+/* End of mapping list */
 #define EMPCD_MAPPING_END	0xffff
 
 struct empcd_mapping
 {
 	uint16_t		code;
-	char			name[32];
-	char			desc[32];
+	char			name[64];
+	char			desc[64];
 };
 
 #define EV_KEY_UP		0

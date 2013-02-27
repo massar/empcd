@@ -425,9 +425,17 @@ bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const
 		return false;
 	}
 
+	/* Handle no-repeating 'up' key */
+	if (type == EV_KEY && value == EMPCD_KEY_UPNR)
+	{
+		value = EV_KEY_UP;
+		events[maxevent].norepeat = true;
+	}
+
 	events[maxevent].type = type;
 	events[maxevent].code = code;
 	events[maxevent].value = value;
+	events[maxevent].prev_value = -1; 
 	events[maxevent].action = action;
 	events[maxevent].args = args ? strdup(args) : args;
 	events[maxevent].needargs = needargs;
@@ -562,8 +570,8 @@ bool set_event_from_custom(char *buf)
 		return false;
 	}
 
-	/* Check if they are all max 16 bits */
-	if (type > 0xffff || code > 0xffff || value > 0xffff)
+	/* Check if they are max 16 bits (value is 32bits) */
+	if (type > 0xffff || code > 0xffff)
 	{
 		dolog(LOG_ERR, "'custom' type/code/value are only 16bits, value provided too large\n");
 		return false;
@@ -762,20 +770,30 @@ void handle_event(struct input_event *ev)
 	struct empcd_events	*evt;
 	unsigned int		i, i_event;
 
-	/* Lookup the code in our table */
+	/* Checking all events, thus multiple events can be set for an event */
 	for (i_event = 0; i_event < maxevent; i_event++)
 	{
+		/* Does not match yet */
+		evt = NULL;
+
+		/* Right Type & Code? */
 		if (	events[i_event].type == ev->type &&
-			events[i_event].code == ev->code &&
-			events[i_event].value == ev->value)
+			events[i_event].code == ev->code)
 		{
-			evt = &events[i_event];
-		}
-		else
-		{
-			evt = NULL;
+			/* It is this current value, then it is this event */
+			if (events[i_event].value == ev->value)
+			{
+				/* This is the night^Wevent */
+				evt = &events[i_event];
+			}
+			else
+			{
+				/* Note the 'previous' value */
+				events[i_event].prev_value == ev->value;
+			}
 		}
 
+		/* Handle logging */
 		if (	(evt != NULL && verbosity > 2) ||
 			(evt == NULL && verbosity > 5))
 		{
@@ -830,7 +848,23 @@ void handle_event(struct input_event *ev)
 			dolog(LOG_DEBUG, "%s\n", buf);
 		}
 
-		if (evt != NULL) evt->action(evt->args, evt->needargs);
+		if (!evt) continue;
+
+		/* Handle REPEAT and then UP event for keys */
+		if (	ev->type == EV_KEY &&
+			ev->value == EV_KEY_UP &&
+			evt->norepeat)
+		{
+			/* Was it noted that we before had a repeat event? */
+			if (evt->prev_value == EV_KEY_REPEAT)
+			{
+				/* Ignore this event, but reset the previous */
+				evt->prev_value = -1;
+				continue;
+			}
+		}
+
+		evt->action(evt->args, evt->needargs);
 	}
 }
 

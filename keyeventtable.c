@@ -8,6 +8,8 @@ struct empcd_mapping key_value_map[] =
 	{EV_KEY_DOWN,		"down",			"Key gets pressed down"			},
 	{EV_KEY_REPEAT,		"repeat",		"Key down and gets repeated"		},
 
+	{EMPCD_KEY_UPNR,	"upnr",			"Key goes up, but not after a repeat"	},
+
 	{EMPCD_MAPPING_END,	"undefined",		"Undefined"				}
 };
 
