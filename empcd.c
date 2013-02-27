@@ -759,34 +759,8 @@ int readconfig(char *cfgfile, char **device)
 
 void handle_event(struct input_event *ev)
 {
-	int			repeat = 0;
-	struct input_event	prev;
 	struct empcd_events	*evt;
 	unsigned int		i, i_event;
-
-	/* Slow down repeated KEY repeat's */
-	if (ev->type == EV_KEY)
-	{
-		if (	ev->value	== EV_KEY_REPEAT &&
-			ev->type	== prev.type &&
-			ev->code 	== prev.code &&
-			ev->value	== prev.value)
-		{
-			if (repeat >= 5) repeat = 0;
-			else
-			{
-				repeat++;
-				return;
-			}
-		}
-		else
-		{
-			repeat		= 0;
-			prev.type	= ev->type;
-			prev.code	= ev->code;
-			prev.value	= ev->value;
-		}
-	}
 
 	/* Lookup the code in our table */
 	for (i_event = 0; i_event < maxevent; i_event++)
