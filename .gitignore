@@ -18,3 +18,7 @@ empcd
 *.exe
 *.out
 *.app
+
+# Debian
+debian/empcd.debhelper.log
+
