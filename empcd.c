@@ -9,7 +9,7 @@
 
 #include "empcd.h"
 
-#define EMPCD_VERSION "2012.11.23"
+#define EMPCD_VERSION "2013.12.28"
 #define EMPCD_VSTRING "empcd %s by Jeroen Massar <jeroen@massar.ch>\n"
 
 /* MPD functions */
