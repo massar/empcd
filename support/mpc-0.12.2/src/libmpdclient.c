@@ -306,6 +306,8 @@ static int mpd_parseWelcome(mpd_Connection * connection, const char * host, int 
 	char * test;
 	int i;
 
+	rt = rt;
+
 	if(strncmp(output,MPD_WELCOME_MESSAGE,strlen(MPD_WELCOME_MESSAGE))) {
 		snprintf(connection->errorStr,MPD_ERRORSTR_MAX_LENGTH,
 				"mpd not running on port %i on host \"%s\"",
