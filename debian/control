@@ -3,7 +3,7 @@ Section: net
 Priority: optional
 Maintainer: Jeroen Massar <jeroen@massar.ch>
 Build-Depends: debhelper (>> 4.2)
-Standards-Version: 3.6.2.1
+Standards-Version: 3.9.5
 
 Package: empcd
 Architecture: any
