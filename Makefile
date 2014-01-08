@@ -66,7 +66,7 @@ install: all
 	@echo "Installation into ${DESTDIR}/ completed"
 
 deb:
-	@debian/rules binary
+	@debuild -us -uc
 
 # Mark targets as phony
 .PHONY : all clean deb
