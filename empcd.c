@@ -194,10 +194,16 @@ mpd_Status *empcd_status()
 
 void f_exec(const char *arg, const char *args)
 {
+	if ((!arg || strlen(arg) == 0) && args)
+	{
+		dolog(LOG_WARNING, "f_exec requires '%s' as an argument, none given, ignoring\n", args);
+		return;
+	}
+
 	system(arg);
 }
 
-void f_quit(const char *arg, const char *args)
+void f_quit(const char UNUSED *arg, const char UNUSED *args)
 {
 	running = false;
 }
@@ -242,7 +248,7 @@ F_CMDA(f_load,		mpd_sendLoadCommand)
 F_CMDA(f_remove,	mpd_sendRmCommand)
 F_CMDN(f_clear,		mpd_sendClearCommand)
 
-void f_volume(const char *arg, const char *args)
+void f_volume(const char *arg, const char UNUSED *args)
 {
 	int	dir = 0, volume = 0, i = 0, retry = 5;
 	bool	perc = false;
@@ -285,7 +291,7 @@ void f_volume(const char *arg, const char *args)
 	mpd_freeStatus(status);
 }
 
-void f_seek(const char *arg, const char *args)
+void f_seek(const char *arg, const char UNUSED *args)
 {
 	int	dir = 0, seekto = 0, i = 0, retry = 5;
 	bool	perc = false;
@@ -330,7 +336,7 @@ void f_seek(const char *arg, const char *args)
 	mpd_freeStatus(status);
 }
 
-void f_pause(const char *arg, const char *args)
+void f_pause(const char *arg, const char UNUSED *args)
 {
 	int retry = 5, mode = 0;
 	if (!arg || strlen(arg) == 0 || (strcasecmp(arg, "toggle") == 0))
@@ -356,7 +362,7 @@ void f_pause(const char *arg, const char *args)
 	}
 }
 
-void f_random(const char *arg, const char *args)
+void f_random(const char *arg, const char UNUSED *args)
 {
 	int retry = 5, mode = 0;
 

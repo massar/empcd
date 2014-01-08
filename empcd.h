@@ -44,6 +44,12 @@
 #define true (!false)
 #endif
 
+#ifdef __GNUC__
+#define UNUSED __attribute__ ((__unused__))
+#else
+#define UNUSED
+#endif
+
 struct empcd_events
 {
 	uint16_t		type;
