@@ -1,0 +1,2 @@
+# We use compat level 9 (http://lintian.debian.org/tags/package-needs-versioned-debhelper-build-depends.html)
+empcd source: package-needs-versioned-debhelper-build-depends
