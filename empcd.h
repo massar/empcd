@@ -46,8 +46,10 @@
 
 #ifdef __GNUC__
 #define UNUSED __attribute__ ((__unused__))
+#define ATTR_FORMAT(type, x, y) __attribute__ ((format(type, x, y)))
 #else
 #define UNUSED
+#define ATTR_FORMAT(type, x, y) /* nothing */
 #endif
 
 #define snprintfok(ret, bufsize) (((ret) >= 0) && (((unsigned int)(ret)) < bufsize))

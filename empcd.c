@@ -29,13 +29,15 @@ bool			nompd = false;
 char			*mpd_host = NULL, *mpd_port = NULL;
 
 /* When we receive a signal, we abort */
-void handle_signal(int i)
+static void handle_signal(int i);
+static void handle_signal(int i)
 {
 	running = false;
 	signal(i, &handle_signal);
 }
 
-void doelogA(int level, int errnum, const char *fmt, va_list ap)
+static void doelogA(int level, int errnum, const char *fmt, va_list ap) ATTR_FORMAT(printf, 3, 0);
+static void doelogA(int level, int errnum, const char *fmt, va_list ap)
 {
 	char		buf[8192];
 	int		k;
@@ -88,7 +90,7 @@ void doelogA(int level, int errnum, const char *fmt, va_list ap)
 
 	if (daemonize)
 	{
-		syslog(LOG_LOCAL7 | level, buf);
+		syslog(LOG_LOCAL7 | level, "%s", buf);
 	}
 	else
 	{
@@ -99,11 +101,12 @@ void doelogA(int level, int errnum, const char *fmt, va_list ap)
 			(level == LOG_WARNING ? "warn" :
 			(level == LOG_NOTICE ?  "notice" :
 			(level == LOG_INFO ?    "info" : "(!?)")))));
-		fprintf(out, buf);
+		fprintf(out, "%s", buf);
 	}
 }
 
-void doelog(int level, int errnum, const char *fmt, ...)
+static void doelog(int level, int errnum, const char *fmt, ...) ATTR_FORMAT(printf, 3, 4);
+static void doelog(int level, int errnum, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -111,7 +114,8 @@ void doelog(int level, int errnum, const char *fmt, ...)
 	va_end(ap);
 }
 
-void dolog(int level, const char *fmt, ...)
+static void dolog(int level, const char *fmt, ...) ATTR_FORMAT(printf, 2, 3);
+static void dolog(int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -119,15 +123,14 @@ void dolog(int level, const char *fmt, ...)
 	va_end(ap);
 }
 
-mpd_Connection *empcd_setup()
+static mpd_Connection *empcd_setup(void);
+static mpd_Connection *empcd_setup(void)
 {
 	int		iport;
 	char		*test;
-	int		port_env = 0;
-	int		host_env = 0;
 	int		password_len = 0;
 	int		parsed_len = 0;
-	mpd_Connection	*mpd = NULL;
+	mpd_Connection	*m = NULL;
 
 	if (nompd)
 	{
@@ -156,12 +159,12 @@ mpd_Connection *empcd_setup()
 	if (!test) password_len = 0;
 	if (test && password_len != 0) parsed_len += password_len;
 
-	mpd = mpd_newConnection(mpd_host + parsed_len, iport, 10);
-	if (!mpd) return NULL;
+	m = mpd_newConnection(mpd_host + parsed_len, iport, 10);
+	if (!m) return NULL;
 
-	if (mpd->error)
+	if (m->error)
 	{
-		dolog(LOG_ERR, "MPD Connection Error: %s\n", mpd->errorStr);
+		dolog(LOG_ERR, "MPD Connection Error: %s\n", m->errorStr);
 		return NULL;
 	}
 
@@ -169,21 +172,22 @@ mpd_Connection *empcd_setup()
 	{
 		char *pass = strdup(mpd_host);
 		pass[password_len] = '\0';
-		mpd_sendPasswordCommand(mpd, pass);
-		mpd_finishCommand(mpd);
+		mpd_sendPasswordCommand(m, pass);
+		mpd_finishCommand(m);
 		free(pass);
 
-		if (mpd->error)
+		if (m->error)
 		{
-			dolog(LOG_ERR, "MPD Authentication Error: %s\n", mpd->errorStr);
+			dolog(LOG_ERR, "MPD Authentication Error: %s\n", m->errorStr);
 			return NULL;
 		}
 	}
 
-	return mpd;
+	return m;
 }
 
-bool mpd_check()
+static bool mpd_check(void);
+static bool mpd_check(void)
 {
 	if (nompd) return true;
 
@@ -215,7 +219,8 @@ bool mpd_check()
 	return true;
 }
 
-mpd_Status *empcd_status()
+static mpd_Status *empcd_status(void);
+static mpd_Status *empcd_status(void)
 {
 	int retry = 5;
 	mpd_Status *s = NULL;
@@ -243,10 +248,9 @@ mpd_Status *empcd_status()
 
 /********************************************************************/
 
-void f_exec(const char *arg, const char *args)
+static void f_exec(const char *arg, const char *args);
+static void f_exec(const char *arg, const char *args)
 {
-	int rc;
-
 	if ((!arg || strlen(arg) == 0) && args)
 	{
 		dolog(LOG_WARNING, "f_exec requires '%s' as an argument, none given, ignoring\n", args);
@@ -259,25 +263,29 @@ void f_exec(const char *arg, const char *args)
 	}
 }
 
-void f_quit(const char UNUSED *arg, const char UNUSED *args)
+static void f_quit(const char UNUSED *arg, const char UNUSED *args);
+static void f_quit(const char UNUSED *arg, const char UNUSED *args)
 {
 	running = false;
 }
 
+#define QUOTE(s) #s
+#define STR(s) QUOTE(s)
 #define F_CMDG(fn, f)											\
-void fn(const char *arg, const char *args)								\
+static void f_##fn(const char *arg, const char *args);							\
+static void f_##fn(const char *arg, const char *args)							\
 {													\
 	int retries;											\
 													\
 	if (nompd)											\
 	{												\
-		dolog(LOG_INFO, "%s not executing as MPD is disabled (nompd)\n");			\
+		dolog(LOG_INFO, "%s not executing as MPD is disabled (nompd)\n", STR(fn));		\
 		return;											\
 	}												\
 													\
 	if ((!arg || strlen(arg) == 0) && args)								\
 	{												\
-		dolog(LOG_WARNING, "%s requires '%s' as an argument, none given, ignoring\n", #fn);	\
+		dolog(LOG_WARNING, "%s requires '%s' as an argument, none given, ignoring\n", #fn, args); \
 		return;											\
 	}												\
 													\
@@ -295,22 +303,23 @@ void fn(const char *arg, const char *args)								\
 #define F_CMDN(fn, f)	F_CMDG(fn,f(mpd))
 #define F_CMDA(fn, f)	F_CMDG(fn,f(mpd, arg))
 
-F_CMDN(f_next,		mpd_sendNextCommand)
-F_CMDN(f_prev,		mpd_sendPrevCommand)
-F_CMDN(f_stop,		mpd_sendStopCommand)
-F_CMDG(f_play,		mpd_sendPlayCommand(mpd,-1))
-F_CMDA(f_save,		mpd_sendSaveCommand)
-F_CMDA(f_load,		mpd_sendLoadCommand)
-F_CMDA(f_remove,	mpd_sendRmCommand)
-F_CMDN(f_clear,		mpd_sendClearCommand)
+F_CMDN(next,	mpd_sendNextCommand)
+F_CMDN(prev,	mpd_sendPrevCommand)
+F_CMDN(stop,	mpd_sendStopCommand)
+F_CMDG(play,	mpd_sendPlayCommand(mpd,-1))
+F_CMDA(save,	mpd_sendSaveCommand)
+F_CMDA(load,	mpd_sendLoadCommand)
+F_CMDA(remove,	mpd_sendRmCommand)
+F_CMDN(clear,	mpd_sendClearCommand)
 
-void f_volume(const char *arg, const char UNUSED *args)
+static void f_volume(const char *arg, const char UNUSED *args);
+static void f_volume(const char *arg, const char UNUSED *args)
 {
 	int	dir = 0, volume = 0, i = 0, retry = 5;
 	bool	perc = false;
 	mpd_Status *status;
 
-	status = empcd_status(mpd);
+	status = empcd_status();
 	if (!status) return;
 
 	if (arg[0] == '-')	{ i++; dir = -1; }
@@ -347,12 +356,13 @@ void f_volume(const char *arg, const char UNUSED *args)
 	mpd_freeStatus(status);
 }
 
-void f_seek(const char *arg, const char UNUSED *args)
+static void f_seek(const char *arg, const char UNUSED *args);
+static void f_seek(const char *arg, const char UNUSED *args)
 {
 	int	dir = 0, seekto = 0, i = 0, retry = 5;
 	bool	perc = false;
 
-	mpd_Status *status = empcd_status(mpd);
+	mpd_Status *status = empcd_status();
 	if (!status) return;
 
 	if (arg[0] == '-')	{ i++; dir = -1; }
@@ -392,13 +402,14 @@ void f_seek(const char *arg, const char UNUSED *args)
 	mpd_freeStatus(status);
 }
 
-void f_pause(const char *arg, const char UNUSED *args)
+static void f_pause(const char *arg, const char UNUSED *args);
+static void f_pause(const char *arg, const char UNUSED *args)
 {
 	int retry = 5, mode = 0;
 	if (!arg || strlen(arg) == 0 || (strcasecmp(arg, "toggle") == 0))
 	{
 		/* Toggle the pause mode */
-		mpd_Status *status = empcd_status(mpd);
+		mpd_Status *status = empcd_status();
 		if (!status) return;
 
 		mode = (status->state == MPD_STATUS_STATE_PAUSE ? 0 : 1);
@@ -418,14 +429,15 @@ void f_pause(const char *arg, const char UNUSED *args)
 	}
 }
 
-void f_random(const char *arg, const char UNUSED *args)
+static void f_random(const char *arg, const char UNUSED *args);
+static void f_random(const char *arg, const char UNUSED *args)
 {
 	int retry = 5, mode = 0;
 
 	if (!arg || strlen(arg) == 0 || (strcasecmp(arg, "toggle") == 0))
 	{
 		/* Toggle the random mode */
-		mpd_Status *status = empcd_status(mpd);
+		mpd_Status *status = empcd_status();
 		if (!status) return;
 
 		mode = !status->random;
@@ -478,8 +490,8 @@ static const struct empcd_funcs
 
 /********************************************************************/
 
-bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const char *arg, const char *args), const char *args, const char *needargs);
-bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const char *arg, const char *args), const char *args, const char *needargs)
+static bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const char *arg, const char *args), const char *args, const char *needargs);
+static bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const char *arg, const char *args), const char *args, const char *needargs)
 {
 	if (maxevent >= (sizeof(events)/sizeof(events[0])))
 	{
@@ -506,8 +518,8 @@ bool set_event(uint16_t type, uint16_t code, int32_t value, void (*action)(const
 	return true;
 }
 
-bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *func_, char **arg);
-bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *func_, char **arg)
+static bool which_func(const char *buf, unsigned int len, unsigned int *o_, unsigned int *func_, const char **arg);
+static bool which_func(const char *buf, unsigned int len, unsigned int *o_, unsigned int *func_, const char **arg)
 {
 	unsigned int i, o = *o_, l;
 
@@ -539,20 +551,20 @@ bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *fun
 	KEY_KPSLASH DOWN f_seek -1
 	<key> <value> <action> <arg>
 */
-bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd_mapping *value_map)
+static bool set_event_from_map(const char *buf, struct empcd_mapping *event_map, struct empcd_mapping *value_map);
+static bool set_event_from_map(const char *buf, struct empcd_mapping *event_map, struct empcd_mapping *value_map)
 {
 	unsigned int	i = 0, o = 0, len = strlen(buf), l = 0,
-			event = 0, event_code = 0,
+			event_code = 0,
 			value = 0, func = 0;
-	void		(*what)(char *arg);
-	char		*arg = NULL, *event_name = "custom", *event_desc = "custom";
+	const char	*arg = NULL;
+	const char	*event_name = "custom", *event_desc = "custom";
 
 	/* Not a numeric value? */
 	if (sscanf(&buf[o], "%u", &i) == 1 && i == 0)
 	{
 		/* This is our event_code */
 		event_code = i;
-		event = 0;
 	}
 	else
 	{
@@ -574,7 +586,6 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 		event_code = event_map[i].code;
 		event_name = event_map[i].name;
 		event_desc = event_map[i].desc;
-		event = i;
 	}
 
 	/* Figure out the value (up/down/release/...) */
@@ -618,11 +629,12 @@ bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd
 	return set_event(EV_KEY, event_code, value_map[value].code, func_map[func].function, arg, func_map[func].args);
 }
 
-bool set_event_from_custom(char *buf)
+static bool set_event_from_custom(char *buf);
+static bool set_event_from_custom(char *buf)
 {
 	unsigned int	type, code, value;
 	unsigned int	o, c = 0, func;
-	char		*arg;
+	const char	*arg;
 
 	dolog(LOG_ERR, "Custom Event: '%s'\n", buf);
 
@@ -675,7 +687,8 @@ bool set_event_from_custom(char *buf)
 	>0 = all okay (lines read)
 	<0 = error parsing file (line number)
 */
-int readconfig(char *cfgfile, char **device)
+static int readconfig(const char *cfgfile, char **device);
+static int readconfig(const char *cfgfile, char **device)
 {
 	unsigned int	line = 0;
 	int		ret = 0;
@@ -827,7 +840,8 @@ int readconfig(char *cfgfile, char **device)
 	return ret == 0 ? (int)line : ret;
 }
 
-void handle_event(struct input_event *ev)
+static void handle_event(struct input_event *ev);
+static void handle_event(struct input_event *ev)
 {
 	struct empcd_events	*evt;
 	unsigned int		i, i_event;
@@ -851,7 +865,7 @@ void handle_event(struct input_event *ev)
 			else
 			{
 				/* Note the 'previous' value */
-				events[i_event].prev_value == ev->value;
+				events[i_event].prev_value = ev->value;
 			}
 		}
 
@@ -956,8 +970,8 @@ static char short_options[] = "c:de:fgGhKLnqu:vVxXy:";
 
 static struct
 {
-	char *args;
-	char *desc;
+	const char *args;
+	const char *desc;
 } desc_options[] =
 {
 	/* c:	*/ {"<file>",		"Configuration File Location"},
@@ -983,7 +997,8 @@ static struct
 int main (int argc, char **argv)
 {
 	int			fd = -1, option_index, j;
-	char			*device = NULL, *cfgfile = NULL, *conffile = NULL, *t;
+	char			*device = NULL, *conffile = NULL, *t;
+	const char		*cfgfile = NULL;
 	struct input_event	ev;
 	unsigned int		i;
 
