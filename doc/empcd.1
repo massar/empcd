@@ -1,0 +1,76 @@
+.TH "EMPCd" "1" "8 January 2014" "" ""
+
+.SH NAME
+EMPCd \- Event Music Player Client daemon
+.SH SYNOPSIS
+
+\fBempcd\fR [\fB-c\fR <file>] [\fB-d\fR] [\fB-e\fR] [\fB-f\fR] [\fB-g\fR] [\fB-G\fR] [\fB-h\fR]
+[\fB-K\fR] [\fB-L\fR] [\fB-n\fR] [\fB-q\fR] [\fB-u\fR <username>]
+[\fB-v\fR] [\fB-V\fR] [\fB-x\fR] [\fB-X\fR] [\fB-y\fR <level>]
+
+.SH "DESCRIPTION"
+.PP
+This is empcd which can use /dev/input/event0 or other event devices to control MPD,
+directly using libmpdclient and other programs, currently using system(2).
+.SH "OPTIONS"
+.TP
+\fB-c <file>\fR
+Specify a custom configuration file location.
+.TP
+\fB-d\fR
+Detach the program into the background
+.TP
+\fB-e <eventdevice>\fR
+The event device to use (default: /dev/input/event0)
+.TP
+\fB-f\fR
+Don't detach, stay in the foreground
+.TP
+\fB-g\fR
+Give up when opening the device fails (default)
+.TP
+\fB-G\fR
+Do not give up when opening the device fails
+.TP
+\fB-h\fR
+Help file
+.TP
+\fB-K\fR
+List the keys that are known to this program
+.TP
+\fB-L\fR
+List the functions known to this program
+.TP
+\fB-n\fR
+no-mpd mode, does not connect to mpd
+.TP
+\fB-q\fR
+Lower the verbosity level to 0 (quiet)
+.TP
+\fB-u <username>\fR
+Drop priveleges to <user>
+.TP
+\fB-v\fR
+Increase the verbosity level by 1
+.TP
+\fB-V\fR
+Show the version of this program
+.TP
+\fB-x\fR
+Exclusive device access (default)
+.TP
+\fB-X\fR
+Non-Exclusive device access
+.TP
+\fB-y <level>\fR
+Set the verbosity level to <level>
+.TP
+\fB-L opt\fR
+<desc>
+.TP
+.SH "SEE ALSO"
+.PP
+The EMPCd page <URL:http://unfix.org/projects/empcd/> and the Github repository <URL:http://github.com/massar/empcd/>.
+.SH "AUTHOR"
+.PP
+EMPCd was written by Jeroen Massar with contributions supplied by a number of people as mentioned in the Changelog and git commits.
