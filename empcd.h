@@ -50,6 +50,8 @@
 #define UNUSED
 #endif
 
+#define snprintfok(ret, bufsize) (((ret) >= 0) && (((unsigned int)(ret)) < bufsize))
+
 struct empcd_events
 {
 	uint16_t		type;

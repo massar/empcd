@@ -35,17 +35,60 @@ void handle_signal(int i)
 	signal(i, &handle_signal);
 }
 
-void dologA(int level, const char *fmt, va_list ap)
+void doelogA(int level, int errnum, const char *fmt, va_list ap)
 {
-	char buf[8192];
+	char		buf[8192];
+	int		k;
+	unsigned int	i;
 
 	if (level == LOG_DEBUG && verbosity < 1) return;
 
-	vsnprintf(buf, sizeof(buf), fmt, ap);
+	k = vsnprintf(buf, sizeof(buf), fmt, ap);
+	if (!snprintfok(k, sizeof(buf)))
+	{
+		snprintf(buf, sizeof(buf), "[Log line way too long: %u/%u bytes]\n", k, (unsigned int)sizeof(buf));
+		level = LOG_ERR;
+	}
+
+	/* Append errno description? */
+	if (errnum != 0)
+	{
+		i = strlen(buf);
+		if (i == 0) i = 1;
+		if (i < (sizeof(buf) - 10))
+		{
+			/* Add ": " overwriting the \n which has to be present */
+			buf[i-1] = ':';
+			buf[i] = ' ';
+			buf[i+1] = '\0';
+
+			errno = 0;
+			k = strerror_r(errnum, &buf[i+1], sizeof(buf) - (i+2));
+			if (k == 0)
+			{
+				i = strlen(buf);
+				k = snprintf(&buf[i], sizeof(buf)-i, " (errno %d)\n", errnum);
+				if (!snprintfok(k, sizeof(buf)-i))
+				{
+					/* Doesn't hurt when it doesn't fit, just terminate it */
+					buf[i] = '\0';
+				}
+			}
+			else
+			{
+				k = snprintf(&buf[i+1], sizeof(buf) - (i+2), " [unknown erro %u]\n", errnum);
+				if (!snprintfok(k, sizeof(buf)-i))
+				{
+					/* Just terminate if all is failing */
+					buf[i+1] = '\0';
+				}
+			}
+		}
+	}
 
 	if (daemonize)
 	{
-		syslog(LOG_LOCAL7|level, buf);
+		syslog(LOG_LOCAL7 | level, buf);
 	}
 	else
 	{
@@ -60,11 +103,19 @@ void dologA(int level, const char *fmt, va_list ap)
 	}
 }
 
+void doelog(int level, int errnum, const char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	doelogA(level, errnum, fmt, ap);
+	va_end(ap);
+}
+
 void dolog(int level, const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
-	dologA(level, fmt, ap);
+	doelogA(level, 0, fmt, ap);
 	va_end(ap);
 }
 
@@ -194,13 +245,18 @@ mpd_Status *empcd_status()
 
 void f_exec(const char *arg, const char *args)
 {
+	int rc;
+
 	if ((!arg || strlen(arg) == 0) && args)
 	{
 		dolog(LOG_WARNING, "f_exec requires '%s' as an argument, none given, ignoring\n", args);
 		return;
 	}
 
-	system(arg);
+	if (system(arg) < 0)
+	{
+		doelog(LOG_WARNING, errno, "f_exec failed to execute '%s'\n", arg);
+	}
 }
 
 void f_quit(const char UNUSED *arg, const char UNUSED *args)
@@ -1123,12 +1179,30 @@ int main (int argc, char **argv)
 		if (j != 0) return 0;
 
 		/* Child fork */
-		setsid();
+		if (setsid() < 0)
+		{
+			doelog(LOG_ERR, errno, "Failed to reopen stdout\n");
+			return 1;
+		}
 
 		/* Cleanup stdin/out/err */
-		freopen("/dev/null","r",stdin);
-		freopen("/dev/null","w",stdout);
-		freopen("/dev/null","w",stderr);
+		if (freopen("/dev/null", "r", stdin) == NULL)
+		{
+			doelog(LOG_ERR, errno, "Failed to reopen stdin\n");
+			return 1;
+		}
+
+		if (freopen("/dev/null", "w", stdout) == NULL)
+		{
+			doelog(LOG_ERR, errno, "Failed to reopen stdout\n");
+			return 1;
+		}
+
+		if (freopen("/dev/null", "w", stderr) == NULL)
+		{
+			doelog(LOG_ERR, errno, "Failed to reopen stderr\n");
+			return 1;
+		}
 	}
 
 	/* Handle these signals for a clean exit */
@@ -1158,7 +1232,7 @@ int main (int argc, char **argv)
 		/* Worked? */
 		if (fd >= 0) break;
 
-		dolog(LOG_ERR, "Couldn't open event device %s: %u\n", device, errno);
+		doelog(LOG_ERR, errno, "Couldn't open event device %s\n", device);
 
 		if (giveup) break;
 
@@ -1176,7 +1250,10 @@ int main (int argc, char **argv)
 	}
 
 	/* Obtain Exclusive device access */
-	if (exclusive) ioctl(fd, EVIOCGRAB, 1);
+	if (exclusive)
+	{
+		ioctl(fd, EVIOCGRAB, 1);
+	}
 
 	/* Allow usage of empcd without contacting MPD, thus effectively making it a input daemon */
 	if (!nompd)
@@ -1194,19 +1271,31 @@ int main (int argc, char **argv)
 	 * Drop our root privileges.
 	 * We don't need them anymore anyways
 	 */
-	if (drop_uid != 0)
-	{
-		dolog(LOG_INFO, "Dropping userid to %u...\n", drop_uid);
-		setuid(drop_uid);
-	}
-
 	if (drop_gid != 0)
 	{
 		dolog(LOG_INFO, "Dropping groupid to %u...\n", drop_gid);
-		setgid(drop_gid);
+		if (setgid(drop_gid) < 0)
+		{
+			doelog(LOG_ERR, errno, "Could not drop to GID %un", drop_gid);
+			running = false;
+		}
 	}
 
-	dolog(LOG_INFO, "Running as PID %u, processing your strokes\n", getpid());
+	if (drop_uid != 0)
+	{
+		dolog(LOG_INFO, "Dropping userid to %u...\n", drop_uid);
+		if (setuid(drop_uid) < 0)
+		{
+			doelog(LOG_ERR, errno, "Could not drop to UID %un", drop_uid);
+			running = false;
+		}
+	}
+
+	if (running)
+	{
+		dolog(LOG_INFO, "Running as PID %u, processing your strokes\n", getpid());
+	}
+
 	while (running)
 	{
 		struct timeval	tv;
