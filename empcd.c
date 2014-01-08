@@ -979,7 +979,7 @@ static struct
 	/* e:	*/ {"<eventdevice>",	"The event device to use (default: /dev/input/event0)"},
 	/* f	*/ {NULL,		"Don't detach, stay in the foreground"},
 	/* g	*/ {NULL,		"Give up when opening the device fails (default)"},
-	/* G:	*/ {NULL,		"Do not give up when opening the device fails"},
+	/* G	*/ {NULL,		"Do not give up when opening the device fails"},
 	/* h	*/ {NULL,		"This help"},
 	/* K	*/ {NULL,		"List the keys that are known to this program"},
 	/* L	*/ {NULL,		"List the functions known to this program"},
