@@ -1,3 +1,12 @@
+empcd (2014.01.08) stable; urgency=low
+  * Define ourselves as a native package
+  * Upgrade to Debian compat level 9
+  * Various Lintian fixes
+  * Make compiler happier by defining unused variables as UNUSED
+  * Resolve unchecked syscalls return codes
+
+ -- Jeroen Massar <jeroen@massar.ch>  Wed,  8 Jan 2014 11:25:42 +0100
+
 empcd (2013.02.28) stable; urgency=low
   * Add UPNR (Up No Repeat)
     resolves https://github.com/massar/empcd/issues/3
@@ -7,7 +16,7 @@ empcd (2013.02.28) stable; urgency=low
   * Fix example for mpd_random in doc/empcd.conf
   * Bring debian packaging to current minimal 'dh' (8) standard
 
- -- Jeroen Massar <jeroen@massar.ch>  Thu, 28 Feb 2012 21:50:42 +0100
+ -- Jeroen Massar <jeroen@massar.ch>  Tue, 28 Feb 2012 21:50:42 +0100
 
 empcd (2012.11.23) stable; urgency=low
   * Fixup function naming confusion (https://github.com/massar/empcd/issues/2)
