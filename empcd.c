@@ -485,7 +485,7 @@ bool which_func(char *buf, unsigned int len, unsigned int *o_, unsigned int *fun
 */
 bool set_event_from_map(char *buf, struct empcd_mapping *event_map, struct empcd_mapping *value_map)
 {
-	unsigned int	i = 0, o = 0, len = strlen(buf), l,
+	unsigned int	i = 0, o = 0, len = strlen(buf), l = 0,
 			event = 0, event_code = 0,
 			value = 0, func = 0;
 	void		(*what)(char *arg);
