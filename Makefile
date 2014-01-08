@@ -25,6 +25,17 @@ DESTDIR	= /
 dirsbin = /usr/sbin/
 dirdoc  = /usr/share/doc/empcd/
 
+# Our very *bliep* set of options to make sure that these things can't cause any issues
+CFLAGS += -W -Wall -Wshadow -Wpointer-arith -Wwrite-strings
+CFLAGS += -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes
+CFLAGS += -Wmissing-declarations -Wredundant-decls -Wnested-externs
+CFLAGS += -Winline -Wbad-function-cast -Wunused -Winit-self -Wextra
+CFLAGS += -Wno-long-long -Wmissing-include-dirs
+CFLAGS += -Wno-packed -pedantic -Wno-variadic-macros -Wswitch-default
+CFLAGS += -Wformat=2 -Wformat-security -Wmissing-format-attribute
+CFLAGS += -fshort-enums -fstrict-aliasing -fno-common
+CFLAGS += -D_REENTRANT -D_THREAD_SAFE -pipe
+
 # Export some things
 export DESTDIR
 export dirsbin
