@@ -21,4 +21,7 @@ empcd
 
 # Debian
 debian/empcd.debhelper.log
+debian/empcd.*.debhelper
+debian/empcd.substvars
+debian/files
 
