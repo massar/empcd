@@ -7,7 +7,7 @@ Standards-Version: 3.6.2.1
 
 Package: empcd
 Architecture: any
-Depends: ${shlibs:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Event Music Player Client daemon
  Music Player Client (which daemonizes) and 
  can be controlled by /dev/input/eventX devices
