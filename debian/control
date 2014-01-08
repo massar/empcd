@@ -9,7 +9,10 @@ Package: empcd
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Event Music Player Client daemon
- Music Player Client (which daemonizes) and 
- can be controlled by /dev/input/eventX devices
- eg a USB keyboard.
-
+ This is empcd which can use /dev/input/event0 or other event devices to control
+ MPD (Music Player Daemon) directly using the MPC (Music Player Client) library
+ (libmpdclient) and other programs using simple system(2) execution usable for scripts.
+ 
+ empcd is suited for embedded devices (raspberry pi, pogoplug etc) as it has a very small footprint.
+ 
+ All kinds of devices that support 'input events' can be connected: (USB) keyboards, mouses etc.
