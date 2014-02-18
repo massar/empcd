@@ -31,7 +31,7 @@ case "$1" in
 		;;
 
 	stop)
-		log_daemon_msg "Starting the Event Music Player Client daemon" "empcd"
+		log_daemon_msg "Stopping the Event Music Player Client daemon" "empcd"
 		if start-stop-daemon --stop --exec /usr/sbin/empcd --quiet --oknodo; then
 			log_end_msg $?
 		else
