@@ -1,3 +1,8 @@
+empcd (2014.11.02) stable; urgency=low
+  * Added MPD 'update' command
+
+ -- Jeroen Massar <jeroen@massar.ch>  Sun,  2 Nov 2014 20:42:42 +0100
+
 empcd (2014.01.08) stable; urgency=low
   * Define ourselves as a native package
   * Upgrade to Debian compat level 9

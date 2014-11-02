@@ -457,6 +457,25 @@ static void f_random(const char *arg, const char UNUSED *args)
 	}
 }
 
+static void f_update(const char *arg, const char UNUSED *args);
+static void f_update(const char *arg, const char UNUSED *args)
+{
+	char	*path;
+	int	retry = 5;
+
+	path = (char *)(arg == NULL ? "" : arg);
+
+	while (retry > 0)
+	{
+		retry--;
+		mpd_sendUpdateCommand(mpd, path);
+		if (mpd_check()) continue;
+		mpd_finishCommand(mpd);
+		if (mpd_check()) continue;
+		break;
+	}
+}
+
 static const struct empcd_funcs
 {
 	void		(*function)(const char *arg, const char *args);
@@ -479,6 +498,7 @@ static const struct empcd_funcs
 	{ f_seek,	true, "mpd_seek",		"[+|-]<val>[%]",	"MPD Seek direct or relative (+|-) percentage when ends in %"		},
 	{ f_volume,	true, "mpd_volume",		"[+|-]<val>[%]",	"MPD Volume direct or relative (+|-) percentage when ends in %"		},
 	{ f_random,	true, "mpd_random",		"[toggle|on|off]",	"MPD Random Toggle or Set"						},
+	{ f_update,	true, "mpd_update",		"[<path>]",		"MPD Update"								},
 	{ f_load,	true, "mpd_plst_load",		"<playlist>",		"MPD Load Playlist"							},
 	{ f_save,	true, "mpd_plst_save",		"<playlist>",		"MPD Save Playlist"							},
 	{ f_clear,	true, "mpd_plst_clear",		NULL,			"MPD Clear Playlist"							},
