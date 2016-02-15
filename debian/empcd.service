@@ -1,0 +1,11 @@
+[Unit]
+Description=Event Music Player Client daemon
+After=systemd-modules-load.service
+
+[Service]
+Type=simple
+ExecStart=/usr/sbin/empcd
+
+[Install]
+WantedBy=multi-user.target
+
